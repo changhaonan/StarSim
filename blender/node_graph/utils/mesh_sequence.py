@@ -45,4 +45,4 @@ class MeshSequence:
         Args:
             frame (_type_): _description_
         """
-        return
+        pass

@@ -1,11 +1,24 @@
 """ Render method using Blender
 """
+import os
+import sys
 import numpy as np
 import bpy  # Tools provided by blender
 import bmesh  # Tools provided by blender
 import mathutils
 from mathutils import Matrix, Vector, Quaternion, Euler  # Tools provided by blender
 from mathutils.bvhtree import BVHTree  # Tools provided by blender
+import json
+
+# Pending path
+bpy_data_dir = os.path.dirname(bpy.data.filepath)
+if not bpy_data_dir in sys.path:
+    sys.path.append(bpy_data_dir)
+file_data_dir = os.path.dirname(os.path.abspath(__file__))
+if not file_data_dir in sys.path:
+    print(file_data_dir)
+    sys.path.append(file_data_dir)
+
 from utils.blender_utils import get_calibration_matrix_K_from_blender
 from utils.camera_utils import blender_to_default
 
@@ -18,8 +31,7 @@ class BlenderRender:
             bpy.ops.object.delete(use_global=False)
 
     def SetCameraProperty(self, cam_property):
-        """_summary_
-
+        """ Set camera property
         Args:
             cam_property (dict): ["angle", "image_cols", "image_rows"]
         """
@@ -36,7 +48,6 @@ class BlenderRender:
 
     def BindMeshSeqence(self, mesh_sequence):
         """ Bind MeshSequence object to the blender renderer
-
         Args:
             mesh_sequence (MeshSequence): see utils.mesh_sequence
         """
@@ -77,7 +88,7 @@ class BlenderRender:
         bm.verts.ensure_lookup_table()
         bm.faces.ensure_lookup_table()
         for i in range(len(bm.verts)):
-            bm.verts[i].co = Vector(self.vertex[i] + self.offset[t])
+            bm.verts[i].co = Vector(self.vertex[i] + self.offset[t][i])
         bm.to_mesh(self.the_mesh.data)
         self.the_mesh.data.update()
 
@@ -130,4 +141,23 @@ class BlenderRender:
 
 
 if __name__ == "__main__":
-    pass
+    import os
+    anime_file = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "example.anime"
+    )
+
+    from utils import mesh_sequence
+    ms = mesh_sequence.MeshSequence()
+    ms.loadFromAnime(anime_path=anime_file)
+
+    config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json")
+    f = open(config_file)
+    dump_json = json.load(f)
+
+    blender_renderer = BlenderRender()
+    blender_renderer.SetCameraProperty(dump_json["masking"]["animation_render"]["cam_property"])
+    blender_renderer.SetCameraPose(np.eye(4))
+    blender_renderer.BindMeshSeqence(ms)
+
+    pcl, oflow = blender_renderer.Render(1)

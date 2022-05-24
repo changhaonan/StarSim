@@ -1,4 +1,3 @@
-
 import bpy  # Tools provided by blender
 from mathutils import Matrix, Vector, Quaternion, Euler  # Tools provided by blender
 from mathutils.bvhtree import BVHTree  # Tools provided by blender
