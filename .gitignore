@@ -1,0 +1,8 @@
+# temp python
+__pycache__
+
+# data
+*.npy
+*.npz
+*.png
+*.xml
