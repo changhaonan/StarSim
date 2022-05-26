@@ -43,6 +43,12 @@ class MeshSequence:
         """ Fetch mesh data at frame t
 
         Args:
-            frame (_type_): _description_
+            t (int): time
         """
-        pass
+        if t == 0:
+            return self.vertex, self.face
+        elif t <= self.offset.shape[0]:
+            return self.vertex + self.offset[t - 1], self.face
+        else:
+            print(f"{t} is out of range: 0~{self.offset.shape[0]}.")
+            return np.array([]), np.array([])

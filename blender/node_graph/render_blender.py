@@ -186,4 +186,8 @@ if __name__ == "__main__":
     context = Context.Instance()
     context.setDir(os.path.join(easy3d_viewer_dir, f"public/test_data/{visualization_dir}"), dir_prefix="frame_")
     context.open(0)
+
+    context.addPointCloud("test")
+    vertex, _ = ms.at(0)  # Fetch vertex from mesh sequence
+    Visualizer.SavePointCloud(vertex, context.at("test"))
     context.close()
