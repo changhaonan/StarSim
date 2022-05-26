@@ -20,7 +20,7 @@ if not file_data_dir in sys.path:
     sys.path.append(file_data_dir)
 
 from utils.blender_utils import get_calibration_matrix_K_from_blender
-from utils.camera_utils import blender_to_default
+from utils.camera_utils import blender_to_default, look_at_matrix
 
 class BlenderRender:
     def __init__(self) -> None:
@@ -142,6 +142,7 @@ class BlenderRender:
 
 if __name__ == "__main__":
     import os
+    from pathlib import Path
     anime_file = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
         "example.anime"
@@ -153,11 +154,36 @@ if __name__ == "__main__":
 
     config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json")
     f = open(config_file)
-    dump_json = json.load(f)
+    config = json.load(f)
 
     blender_renderer = BlenderRender()
-    blender_renderer.SetCameraProperty(dump_json["masking"]["animation_render"]["cam_property"])
-    blender_renderer.SetCameraPose(np.eye(4))
+    blender_renderer.SetCameraProperty(config["masking"]["animation_render"]["cam_property"])
+    # Get look at matrix
+    cam_pos = np.array(config["masking"]["animation_render"]["cam_locations"][0])
+    obj_center = np.array(config["masking"]["animation_render"]["object_center"])
+    cam2world = look_at_matrix(
+        cam_pos,
+        obj_center - cam_pos,
+        np.array([0, 0, 1])
+    )
+    print(cam2world)
+    blender_renderer.SetCameraPose(cam2world)
     blender_renderer.BindMeshSeqence(ms)
 
     pcl, oflow = blender_renderer.Render(1)
+
+    # Visualize depth graph
+    from utils.visualize_utils import Visualizer
+    img_save_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "test_depth.png")
+    Visualizer.SaveDepthImage(pcl, img_save_path)
+
+    # Finish the debug for this part
+    # Visualization
+    from easy3d_viewer.context import *
+    anime_name = Path(anime_file).stem
+    visualization_dir = anime_name
+    easy3d_viewer_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../external/Easy3DViewer")
+    context = Context.Instance()
+    context.setDir(os.path.join(easy3d_viewer_dir, f"public/test_data/{visualization_dir}"), dir_prefix="frame_")
+    context.open(0)
+    context.close()
