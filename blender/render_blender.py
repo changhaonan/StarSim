@@ -54,6 +54,22 @@ class BlenderRender:
         bpy_cam.matrix_world = cam2world.T
         self.extrinsic_matrix = cam2world
 
+    def LookAtCenterOfMesh(self, vertex, cam_pos):
+        """ Set camera's extrinsic to look at the center of mesh
+
+        Args:
+            vertex (np.matNx3): mesh vertex position
+            cam_pos (np.vec3): camera position
+        """
+        obj_center = np.mean(vertex, axis=0)
+        world2cam = look_at_matrix(
+            cam_pos,
+            obj_center - cam_pos,
+            np.array([0, 0, 1])
+        )
+        cam2world = np.linalg.inv(world2cam)
+        self.SetCameraExtrinsic(cam2world)
+
     def BindMeshSeqence(self, mesh_sequence):
         """ Bind MeshSequence object to the blender renderer
         Args:
@@ -64,12 +80,11 @@ class BlenderRender:
         # make object mesh: construct the mesh obj
         vertices = mesh_sequence.vertex.tolist()
         edges = []
-        self.framewise_depth = []
         faces = mesh_sequence.face.tolist()
         mesh = bpy.data.meshes.new("mesh")
         mesh.from_pydata(vertices, edges, faces)
         mesh.update()
-        the_mesh = bpy.data.objects.new("the_mesh", mesh)
+        the_mesh = bpy.data.objects.new(mesh_sequence.name, mesh)
         the_mesh.data.vertex_colors.new() # init color
         bpy.context.collection.objects.link(the_mesh)
 
@@ -78,6 +93,18 @@ class BlenderRender:
         self.offset = offset
         self.vertex = mesh_sequence.vertex
         self.mesh_sequence = mesh_sequence
+
+        # Debug:
+        # self.CheckEnvironment()
+    
+    def DeBindMeshSequence(self, mesh_sequence):
+        if mesh_sequence.name in bpy.data.objects.keys():
+            bpy.data.objects[mesh_sequence.name].select_set(state=True)
+            bpy.ops.object.delete(use_global=False)
+
+    def CheckEnvironment(self):
+        for key in bpy.data.objects.keys():
+            print(key)
 
     def UpdateFrame(self, t):
         src_offset = self.offset[t]

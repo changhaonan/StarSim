@@ -49,6 +49,10 @@ class MeshSequence:
 
         Args:
             t (int): time
+        Returns:
+            np.matNx3: vertex position
+            np.matMx3: face data
+            dict: attribute
         """
         if t == 0:
             return self.vertex, self.face, self.attributeAt(t)

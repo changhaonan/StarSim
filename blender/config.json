@@ -7,7 +7,7 @@
     "render" : {
         "camera" : {
             "extrinsic_property" : {
-                "cam_locations" : [[2, 2, 2], [0, 0, 1]],
+                "cam_locations" : [[2, 2, 2], [-2, 2, 2]],
                 "object_center": [0.0006635213, -0.60262704, 0.985935]
             },
             "intrinsic_property" : {
