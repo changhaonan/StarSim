@@ -103,7 +103,7 @@ class SingleDeformGraphSampler:
         # Save for visualizatoin
         # Visualization
         if enable_vis:
-            easy3d_viewer_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../../external/Easy3DViewer")
+            easy3d_viewer_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../external/Easy3DViewer")
             print(f"View enabled:")
             print(f"cd {easy3d_viewer_dir}")
             print(f"python configure.py")

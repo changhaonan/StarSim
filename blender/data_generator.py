@@ -4,15 +4,10 @@ Note:
 - Major class used for data generation
 """
 import os
+import sys
 import json
 import numpy as np
 
-import sys
-# Pending path
-# import bpy  # Tools provided by blender
-# bpy_data_dir = os.path.dirname(bpy.data.filepath)
-# if not bpy_data_dir in sys.path:
-#     sys.path.append(bpy_data_dir)
 file_data_dir = os.path.dirname(os.path.abspath(__file__))
 if not file_data_dir in sys.path:
     print(file_data_dir)
@@ -65,7 +60,10 @@ class DataGeneratorNodeFlow:
 
 if __name__ == "__main__":
     config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json")
-    dump_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "test")
-    anime_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "example.anime")
+    dump_deer_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "output/deer")
+    dump_bear_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "output/bear")
+    deer_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "test_data/deer.anime")
+    bear_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "test_data/bear.anime")
     data_generator = DataGeneratorNodeFlow(config_file)
-    data_generator.Generate(anime_file, dump_path, True)
+    data_generator.Generate(deer_file, dump_deer_path, True)
+    data_generator.Generate(bear_file, dump_bear_path, True)
