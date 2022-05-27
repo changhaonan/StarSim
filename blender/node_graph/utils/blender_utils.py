@@ -1,8 +1,9 @@
+import numpy as np
 import bpy  # Tools provided by blender
 from mathutils import Matrix, Vector, Quaternion, Euler  # Tools provided by blender
 from mathutils.bvhtree import BVHTree  # Tools provided by blender
 
-def get_calibration_matrix_K_from_blender(camera_data):
+def get_intrinsic_matrix_from_blender(camera_data):
     """ Camera projection matrix: (fx, fy, cx, cy);
     refer to: https://blender.stackexchange.com/questions/15102/what-is-blenders-camera-projection-matrix-model
     the code from the above link is wrong, it cause a slight error for fy in "HORIZONTAL" mode or fx in "VERTICAL" mode.
@@ -28,8 +29,5 @@ def get_calibration_matrix_K_from_blender(camera_data):
     u_0 = resolution_x_in_px*scale / 2
     v_0 = resolution_y_in_px*scale / 2
     skew = 0 # only use rectangular pixels
-    K = Matrix(
-        ((alpha_u, skew,    u_0),
-        (    0  ,  alpha_v, v_0),
-        (    0  ,    0,      1 )))
-    return K
+    intrinsic_matrix = np.array([[alpha_u, skew, u_0], [0, alpha_v, v_0]])
+    return intrinsic_matrix

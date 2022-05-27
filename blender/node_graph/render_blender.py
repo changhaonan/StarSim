@@ -19,7 +19,7 @@ if not file_data_dir in sys.path:
     print(file_data_dir)
     sys.path.append(file_data_dir)
 
-from utils.blender_utils import get_calibration_matrix_K_from_blender
+from utils.blender_utils import get_intrinsic_matrix_from_blender
 from utils.camera_utils import blender_to_default, look_at_matrix
 
 class BlenderRender:
@@ -30,21 +30,26 @@ class BlenderRender:
             bpy.data.objects["Cube"].select_set(state=True)
             bpy.ops.object.delete(use_global=False)
 
-    def SetCameraProperty(self, cam_property):
-        """ Set camera property
+    def SetCameraIntrinisc(self, cam_intrinsic_property):
+        """ Set camera intrinsic
         Args:
-            cam_property (dict): ["angle", "image_cols", "image_rows"]
+            cam_intrinsic_property (dict): ["angle", "image_cols", "image_rows"]
+        Returns:
+            np.matrix23f: intrinsic_matrix
         """
         bpy_cam = bpy.data.objects["Camera"].data
-        bpy_cam.angle = eval(cam_property["angle"])
+        bpy_cam.angle = eval(cam_intrinsic_property["angle"])
         bpy_scene = bpy.context.scene
-        bpy_scene.render.resolution_x = cam_property["image_cols"]
-        bpy_scene.render.resolution_y = cam_property["image_rows"]
+        bpy_scene.render.resolution_x = cam_intrinsic_property["image_cols"]
+        bpy_scene.render.resolution_y = cam_intrinsic_property["image_rows"]
         bpy.context.view_layer.update()
+        intrinsic_matrix = get_intrinsic_matrix_from_blender(bpy_cam)
+        return intrinsic_matrix
 
-    def SetCameraPose(self, cam2world):
-        bpy_camera = bpy.data.objects["Camera"]
-        bpy_camera.matrix_world = cam2world.T
+
+    def SetCameraExtrinsic(self, cam2world):
+        bpy_cam = bpy.data.objects["Camera"]
+        bpy_cam.matrix_world = cam2world.T
 
     def BindMeshSeqence(self, mesh_sequence):
         """ Bind MeshSequence object to the blender renderer
@@ -95,8 +100,8 @@ class BlenderRender:
         # Explicitly raycast
         # Prepare rays, (put this inside the for loop if the camera also moves)
         camera = bpy.data.objects["Camera"]
-        K = get_calibration_matrix_K_from_blender(camera.data)
-        fx, fy, cx, cy = K[0][0], K[1][1], K[0][2], K[1][2]
+        intrinsic_matrix = get_intrinsic_matrix_from_blender(camera.data)
+        fx, fy, cx, cy = intrinsic_matrix[0][0], intrinsic_matrix[1][1], intrinsic_matrix[0][2], intrinsic_matrix[1][2]
         width, height = bpy.context.scene.render.resolution_x, bpy.context.scene.render.resolution_y
         cam_blender = np.array(camera.matrix_world)
         cam_default = blender_to_default(cam_blender)
@@ -137,7 +142,7 @@ class BlenderRender:
 
         # Release mesh    
         bm.free()
-        return pcl[:, 2].reshape((height, width)), oflow.resize((height, width, 2))
+        return pcl, pcl[:, 2].reshape((height, width)), oflow.resize((height, width, 2))
 
 
 if __name__ == "__main__":
@@ -157,25 +162,27 @@ if __name__ == "__main__":
     config = json.load(f)
 
     blender_renderer = BlenderRender()
-    blender_renderer.SetCameraProperty(config["masking"]["animation_render"]["cam_property"])
+    intrinsic_matrix = blender_renderer.SetCameraIntrinisc(config["render"]["camera"]["intrinsic_property"])
+    image_rows = config["render"]["camera"]["intrinsic_property"]["image_rows"]
+    image_cols = config["render"]["camera"]["intrinsic_property"]["image_cols"]
     # Get look at matrix
-    cam_pos = np.array(config["masking"]["animation_render"]["cam_locations"][0])
-    obj_center = np.array(config["masking"]["animation_render"]["object_center"])
-    cam2world = look_at_matrix(
+    cam_pos = np.array(config["render"]["camera"]["extrinsic_property"]["cam_locations"][0])
+    obj_center = np.array(config["render"]["camera"]["extrinsic_property"]["object_center"])
+    world2cam = look_at_matrix(
         cam_pos,
         obj_center - cam_pos,
         np.array([0, 0, 1])
     )
-    print(cam2world)
-    blender_renderer.SetCameraPose(cam2world)
+    cam2world = np.linalg.inv(world2cam)
+    blender_renderer.SetCameraExtrinsic(cam2world)
     blender_renderer.BindMeshSeqence(ms)
 
-    pcl, oflow = blender_renderer.Render(1)
+    pcd, depth, oflow = blender_renderer.Render(0)
 
     # Visualize depth graph
     from utils.visualize_utils import Visualizer
     img_save_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "test_depth.png")
-    Visualizer.SaveDepthImage(pcl, img_save_path)
+    Visualizer.SaveDepthImage(depth, img_save_path)
 
     # Finish the debug for this part
     # Visualization
@@ -187,7 +194,23 @@ if __name__ == "__main__":
     context.setDir(os.path.join(easy3d_viewer_dir, f"public/test_data/{visualization_dir}"), dir_prefix="frame_")
     context.open(0)
 
+    # Add point-cloud
     context.addPointCloud("test")
     vertex, _ = ms.at(0)  # Fetch vertex from mesh sequence
     Visualizer.SavePointCloud(vertex, context.at("test"))
+    
+    # Add camera
+    cam_name = "cam-0"
+    context.addCamera(cam_name, cam_name, cam2world.T, intrinsic_matrix,  
+        config["render"]["camera"]["intrinsic_property"]["image_cols"],
+        config["render"]["camera"]["intrinsic_property"]["image_rows"])
+    
+    # Project the depth camera to depth
+    pcd[:, 1] = - pcd[:, 1]
+    pcd[:, 2] = - pcd[:, 2]
+    context.addPointCloud("depth", "depth", cam2world.T)
+    Visualizer.SavePointCloud(pcd, context.at("depth"))
+
+    # Add origin, size of 1-meter
+    context.addCoord("origin", "origin", np.eye(4), 1.0)
     context.close()

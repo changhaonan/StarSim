@@ -26,7 +26,7 @@ def look_at_matrix(location, direction, up):
         up (np.vec3f): where the y-axis is aligned to
 
     Returns:
-        np.matrix4f: cam2world transformation [Standard]
+        np.matrix4f: world2cam transformation [Standard]
     """
     z_axis = direction / np.linalg.norm(direction)
     up = up / np.linalg.norm(up)

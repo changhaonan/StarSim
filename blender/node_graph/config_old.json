@@ -20,18 +20,5 @@
             "outputs": ["rgb", "flow", "depth"],
             "outputs_to_file": ["rgb", "flow", "depth"]
         }
-    },
-    "render" : {
-        "camera" : {
-            "extrinsic_property" : {
-                "cam_locations" : [[2, 2, 2], [0, 0, 1]],
-                "object_center": [0.0006635213, -0.60262704, 0.985935]
-            },
-            "intrinsic_property" : {
-                "image_rows": 480,
-                "image_cols": 640,
-                "angle": "np.pi/3"
-            }
-        }
     }
 }

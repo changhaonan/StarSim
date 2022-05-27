@@ -24,13 +24,12 @@ class Visualizer:
             depth_img (cv.mat.float32): 2D image with single channel
             save_path (string): The path where the image will be saved
         """
-        norm_image = cv2.normalize(depth_img, None, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
-        print(f"max: {norm_image.max()}, min: {norm_image.min()}")
+        norm_image = cv2.normalize(depth_img, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
         cv2.imwrite(save_path, norm_image)
 
     @classmethod
     def SavePointCloud(cls, point_cloud, save_path):
-        """ Save the point cloud file into pcd file
+        """ Save the point cloud file into pcd file in ascii, (Compressed is not supported in visualizer)
 
         Args:
             point_cloud (np.vec3f): array of vetor3f 
@@ -47,8 +46,8 @@ class Visualizer:
         point_cloud_position = point_cloud[:, :3]
         pcd = o3d.t.geometry.PointCloud()
         pcd.point["positions"] = o3d.core.Tensor(point_cloud_position)
-        pcd.point["intensities"] = o3d.core.Tensor(point_cloud_intensity)
-        o3d.t.io.write_point_cloud(save_path, pcd)
+        # pcd.point["intensities"] = o3d.core.Tensor(point_cloud_intensity)
+        o3d.t.io.write_point_cloud(save_path, pcd, True, False)
 
 
 if __name__ == "__main__":
